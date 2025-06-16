@@ -1,0 +1,624 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>饼图</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .chart-container {
+                height: 500px;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#8B5CF6',
+                        dark: '#1F2937',
+                        light: '#F9FAFB'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                },
+            }
+        }
+    </script>
+    <!-- 引入 ECharts 和中国地图 -->
+    <script src="https://cdn.staticfile.org/echarts/4.3.0/echarts.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+<!--    <script href="/js/china.js"></script>-->
+    <script src="/js/echarts.js"></script>
+    <link rel="stylesheet" th>
+
+    <link rel="stylesheet" th:href="@{/css/bootstrap.css}">
+    <link rel="stylesheet" th:href="@{/css/AdminLTE.css}">
+</head>
+<body>
+<div class="box-body">
+    <div class="container mx-auto">
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">数据概览</h2>
+            <p class="text-gray-600">实时监控煤运系统运行状态和关键指标</p>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 card-shadow hover:shadow-lg transition-custom">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-primary">
+                        <i class="fa fa-map-marker text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-gray-500 text-sm">煤矿总数</p>
+                        <h3 id="coal-mine-count" class="text-2xl font-bold">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-6 card-shadow hover:shadow-lg transition-custom">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                        <i class="fa fa-truck text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-gray-500 text-sm">运输公司</p>
+                        <h3 id="transport-company-count" class="text-2xl font-bold">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-6 card-shadow hover:shadow-lg transition-custom">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                        <i class="fa fa-list-alt text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-gray-500 text-sm">运输记录</p>
+                        <h3 id="transport-record-count" class="text-2xl font-bold">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white rounded-xl p-6 card-shadow transition-all duration-300 hover:shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-dark">煤的品种与价格分布</h2>
+                    <div class="flex space-x-2">
+                        <button id="typeFilter" class="px-3 py-1 bg-primary/10 text-primary rounded-md text-sm hover:bg-primary/20 transition-colors">
+                            <i class="fa fa-filter mr-1"></i>按类型筛选
+                        </button>
+                        <button id="sortBtn" class="px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200 transition-colors">
+                            <i class="fa fa-sort mr-1"></i>排序
+                        </button>
+                    </div>
+                </div>
+                <div id="coalPriceChart" class="chart-container w-full"></div>
+            </div>
+
+            <div class="bg-white rounded-xl p-6 card-shadow transition-all duration-300 hover:shadow-lg">
+                <h2 class="text-xl font-semibold text-dark mb-4">数据统计</h2>
+                <div class="space-y-4">
+                    <div class="p-4 bg-blue-50 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">平均价格</span>
+                            <span id="avgPrice" class="text-lg font-bold text-primary">¥0.00</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div id="avgPriceBar" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-green-50 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">最高价格</span>
+                            <span id="maxPrice" class="text-lg font-bold text-secondary">¥0.00</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div id="maxPriceBar" class="bg-secondary h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-purple-50 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">最低价格</span>
+                            <span id="minPrice" class="text-lg font-bold text-accent">¥0.00</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div id="minPriceBar" class="bg-accent h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-yellow-50 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">品种数量</span>
+                            <span id="totalTypes" class="text-lg font-bold text-yellow-600">0种</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 mt-3">
+                            <div class="text-center">
+                                <div class="w-full bg-gray-200 rounded-full h-10 flex items-center justify-center text-xs font-medium">动力煤</div>
+                                <div class="text-xs text-gray-500 mt-1">0种</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-full bg-gray-200 rounded-full h-10 flex items-center justify-center text-xs font-medium">炼焦煤</div>
+                                <div class="text-xs text-gray-500 mt-1">0种</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-full bg-gray-200 rounded-full h-10 flex items-center justify-center text-xs font-medium">无烟煤</div>
+                                <div class="text-xs text-gray-500 mt-1">0种</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-full bg-gray-200 rounded-full h-10 flex items-center justify-center text-xs font-medium">褐煤</div>
+                                <div class="text-xs text-gray-500 mt-1">0种</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 bg-white rounded-xl p-6 card-shadow">
+            <h2 class="text-xl font-semibold text-dark mb-4">煤品种价格详情</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">煤名称</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">煤类型</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">发热量(大卡)</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">价格(元/吨)</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">产地</th>
+                    </tr>
+                    </thead>
+                    <tbody id="coalTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- 表格数据将通过JavaScript动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+
+
+    </div>
+
+    <script>
+        // let currentPage = 1;
+        // const pageSize = 10;
+        // let allCoalData = [];
+        loadDashboardData();
+
+        async function loadDashboardData() {
+            //加载煤矿数量
+            fetch('/api/coalmines')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('coal-mine-count').textContent = data.length;
+                })
+                .catch(error => {
+                    console.error('获取煤矿数据失败:', error);
+                });
+
+
+            // 加载运输公司数量
+            fetch('/api/transportcompanies')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('transport-company-count').textContent = data.length;
+                })
+                .catch(error => {
+                    console.error('获取运输公司数据失败:', error);
+                });
+
+            // 加载运输记录数量
+            fetch('/api/transportrecords')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('transport-record-count').textContent = data.length;
+                })
+                .catch(error => {
+                    console.error('获取运输记录数据失败:', error);
+                });
+
+
+
+            const apiUrl = 'http://localhost:8080/api/coaltypes'; // 替换为实际的接口 URL
+            let coalData = [];
+
+            // 初始化图表
+            const chartDom = document.getElementById('coalPriceChart');
+            const myChart = echarts.init(chartDom);
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalTypes').textContent = data.length;
+                    //coalData = data;
+                    coalData = data.map(item => ({
+                        name: item.coalName,
+                        type: item.coalType,
+                        calorificValue: item.calorificValue,
+                        price: item.price,
+                        origin: item.origin
+                    }));
+
+
+                    // 处理数据
+                    const processedData = processData(coalData);
+                    console.log('coalData:', coalData);
+                    // 设置图表选项
+                    const option = {
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: {
+                                type: 'shadow'
+                            },
+                            formatter: function(params) {
+                                const data = params[0];
+                                return `
+                <div class="text-left">
+                  <div class="font-bold">${data.name}</div>
+                  <div>价格: ${data.value} 元/吨</div>
+                  <div>发热量: ${getCalorificValue(data.name)} 大卡</div>
+                  <div>类型: ${getCoalType(data.name)}</div>
+                  <div>产地: ${getOrigin(data.name)}</div>
+                </div>
+              `;
+                            }
+                        },
+                        legend: {
+                            data: ['价格(元/吨)'],
+                            right: '10%',
+                            itemWidth: 10,
+                            itemHeight: 10
+                        },
+                        grid: {
+                            left: '3%',
+                            right: '4%',
+                            bottom: '3%',
+                            containLabel: true
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: processedData.names,
+                            axisLabel: {
+                                interval: 0,
+                                rotate: 45,
+                                fontSize: 6,
+                                color: '#333',
+                                formatter: function(value) {
+                                    // 太长的名称显示两行
+                                    if (value.length > 4) {
+                                        return value.replace(/(.{4})/g, '$1\n');
+                                    }
+                                    return value;
+                                }
+                            },
+                            axisTick: {
+                                show: false
+                            },
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#e6e6e6'
+                                }
+                            }
+                        },
+                        yAxis: {
+                            type: 'value',
+                            name: '价格(元/吨)',
+                            nameLocation: 'middle',
+                            nameGap: 30,
+                            axisLabel: {
+                                formatter: '{value}'
+                            },
+                            axisLine: {
+                                show: false
+                            },
+                            splitLine: {
+                                lineStyle: {
+                                    color: '#f0f0f0'
+                                }
+                            }
+                        },
+                        series: [
+                            {
+                                name: '价格(元/吨)',
+                                type: 'bar',
+                                data: processedData.prices,
+                                barWidth: '60%',
+                                itemStyle: {
+                                    color: function(params) {
+                                        const type = getCoalType(processedData.names[params.dataIndex]);
+                                        const colorMap = {
+                                            '动力煤': '#3B82F6',
+                                            '炼焦煤': '#10B981',
+                                            '无烟煤': '#8B5CF6',
+                                            '褐煤': '#F59E0B',
+                                            '喷吹煤': '#EC4899'
+                                        };
+                                        return colorMap[type] || '#3B82F6';
+                                    },
+                                    borderRadius: [4, 4, 0, 0]
+                                },
+                                label: {
+                                    show: false,
+                                    position: 'top',
+                                    formatter: '{c}'
+                                }
+                            }
+                        ]
+                    };
+
+                    // 使用刚指定的配置项和数据显示图表。
+                    myChart.setOption(option);
+
+                    // 自适应窗口大小
+                    window.addEventListener('resize', function() {
+                        myChart.resize();
+                    });
+
+                    // 填充表格数据
+                    fillTableData(coalData.slice(0, 60));
+
+                    // 计算统计数据
+                    calculateStatistics(coalData);
+
+                    // 为排序按钮添加事件
+                    document.getElementById('sortBtn').addEventListener('click', function() {
+                        // 切换排序方式
+                        if (this.getAttribute('data-sort') === 'asc') {
+                            this.setAttribute('data-sort', 'desc');
+                            this.innerHTML = '<i class="fa fa-sort-amount-desc mr-1"></i>降序';
+                            sortData('desc');
+                        } else {
+                            this.setAttribute('data-sort', 'asc');
+                            this.innerHTML = '<i class="fa fa-sort-amount-asc mr-1"></i>升序';
+                            sortData('asc');
+                        }
+                    });
+
+                    // 为筛选按钮添加事件
+                    document.getElementById('typeFilter').addEventListener('click', function() {
+                        // 创建筛选弹窗
+                        const filterModal = document.createElement('div');
+                        filterModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                        filterModal.innerHTML = `
+            <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">按煤类型筛选</h3>
+                <button id="closeFilter" class="text-gray-400 hover:text-gray-600">
+                  <i class="fa fa-times"></i>
+                </button>
+              </div>
+              <div class="space-y-3 mb-6">
+                <label class="flex items-center">
+                  <input type="checkbox" class="form-checkbox h-5 w-5 text-primary rounded" value="动力煤" checked>
+                  <span class="ml-2 text-gray-700">动力煤</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="form-checkbox h-5 w-5 text-primary rounded" value="炼焦煤" checked>
+                  <span class="ml-2 text-gray-700">炼焦煤</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="form-checkbox h-5 w-5 text-primary rounded" value="无烟煤" checked>
+                  <span class="ml-2 text-gray-700">无烟煤</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="form-checkbox h-5 w-5 text-primary rounded" value="褐煤" checked>
+                  <span class="ml-2 text-gray-700">褐煤</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="form-checkbox h-5 w-5 text-primary rounded" value="喷吹煤" checked>
+                  <span class="ml-2 text-gray-700">喷吹煤</span>
+                </label>
+              </div>
+              <div class="flex justify-end space-x-3">
+                <button id="resetFilter" class="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50">
+                  重置
+                </button>
+                <button id="applyFilter" class="px-4 py-2 bg-primary text-white rounded-md text-sm hover:bg-primary/90">
+                  应用筛选
+                </button>
+              </div>
+            </div>
+          `;
+
+                        document.body.appendChild(filterModal);
+
+                        // 关闭筛选弹窗
+                        document.getElementById('closeFilter').addEventListener('click', function() {
+                            document.body.removeChild(filterModal);
+                        });
+
+                        // 重置筛选
+                        document.getElementById('resetFilter').addEventListener('click', function() {
+                            const checkboxes = filterModal.querySelectorAll('input[type="checkbox"]');
+                            checkboxes.forEach(checkbox => {
+                                checkbox.checked = true;
+                            });
+                        });
+
+                        // 应用筛选
+                        document.getElementById('applyFilter').addEventListener('click', function() {
+                            const checkboxes = filterModal.querySelectorAll('input[type="checkbox"]:checked');
+                            const selectedTypes = Array.from(checkboxes).map(checkbox => checkbox.value);
+
+                            filterData(selectedTypes);
+                            document.body.removeChild(filterModal);
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('获取数据失败:', error);
+                });
+
+            // 处理数据
+            function processData(data) {
+                const names = [];
+                const prices = [];
+
+                data.forEach(item => {
+                    names.push(item.name);
+                    prices.push(item.price);
+                });
+
+                return { names, prices };
+            }
+
+            // 获取发热量
+            function getCalorificValue(name) {
+                const item = coalData.find(item => item.name === name);
+                return item ? item.calorificValue : '';
+            }
+
+            // 获取煤类型
+            function getCoalType(name) {
+                const item = coalData.find(item => item.name === name);
+                return item ? item.type : '';
+            }
+
+            // 获取产地
+            function getOrigin(name) {
+                const item = coalData.find(item => item.name === name);
+                return item ? item.origin : '';
+            }
+
+            // 填充表格数据
+            function fillTableData(data) {
+                const tableBody = document.getElementById('coalTableBody');
+                tableBody.innerHTML = '';
+
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 transition-colors';
+                    row.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">${item.name}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTypeColor(item.type)}">
+              ${item.type}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">${item.calorificValue}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-primary">¥${item.price.toLocaleString()}</div>
+
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            ${item.origin}
+          </td>
+        `;
+                    tableBody.appendChild(row);
+                });
+            }
+
+            // 获取类型对应的颜色
+            function getTypeColor(type) {
+                const colorMap = {
+                    '动力煤': 'bg-blue-100 text-blue-800',
+                    '炼焦煤': 'bg-green-100 text-green-800',
+                    '无烟煤': 'bg-purple-100 text-purple-800',
+                    '褐煤': 'bg-yellow-100 text-yellow-800',
+                    '喷吹煤': 'bg-pink-100 text-pink-800'
+                };
+                return colorMap[type] || 'bg-gray-100 text-gray-800';
+            }
+
+            // 计算统计数据
+            function calculateStatistics(data) {
+                const prices = data.map(item => item.price);
+                const sum = prices.reduce((acc, price) => acc + price, 0);
+                const avg = sum / prices.length;
+                const max = Math.max(...prices);
+                const min = Math.min(...prices);
+
+                // 更新统计卡片
+                document.getElementById('avgPrice').textContent = `¥${avg.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+                document.getElementById('maxPrice').textContent = `¥${max.toLocaleString()}`;
+                document.getElementById('minPrice').textContent = `¥${min.toLocaleString()}`;
+
+                // 更新进度条
+                document.getElementById('avgPriceBar').style.width = `${(avg / max) * 100}%`;
+                document.getElementById('maxPriceBar').style.width = '100%';
+                document.getElementById('minPriceBar').style.width = `${(min / max) * 100}%`;
+
+                // 更新类型统计
+                const typeCounts = {};
+                data.forEach(item => {
+                    typeCounts[item.type] = (typeCounts[item.type] || 0) + 1;
+                });
+
+                // 这里简单更新前四种类型的数量
+                const typeElements = document.querySelectorAll('.grid-cols-4 .text-xs.text-gray-500');
+                typeElements[0].textContent = `${typeCounts['动力煤'] || 0}种`;
+                typeElements[1].textContent = `${typeCounts['炼焦煤'] || 0}种`;
+                typeElements[2].textContent = `${typeCounts['无烟煤'] || 0}种`;
+                typeElements[3].textContent = `${typeCounts['褐煤'] || 0}种`;
+            }
+
+            // 排序数据
+            function sortData(order) {
+                const sortedData = [...coalData].sort((a, b) => {
+                    return order === 'asc' ? a.price - b.price : b.price - a.price;
+                });
+
+                // 更新图表
+                const processedData = processData(sortedData);
+                myChart.setOption({
+                    xAxis: {
+                        data: processedData.names
+                    },
+                    series: [{
+                        data: processedData.prices
+                    }]
+                });
+
+                // 更新表格
+                fillTableData(sortedData.slice(0, 60));
+            }
+
+            // 筛选数据
+            function filterData(types) {
+                const filteredData = coalData.filter(item => types.includes(item.type));
+
+                // 更新图表
+                const processedData = processData(filteredData);
+                myChart.setOption({
+                    xAxis: {
+                        data: processedData.names
+                    },
+                    series: [{
+                        data: processedData.prices
+                    }]
+                });
+
+                // 更新表格
+                fillTableData(filteredData.slice(0, 60));
+
+                // 更新统计
+                calculateStatistics(filteredData);
+            }
+
+        }
+
+
+
+    </script>
+
+
+</body>
+</html>

@@ -1,0 +1,59 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>图书管理</title>
+    <style>
+        #chart { width: 1500px; height: 650px; margin: 0 auto; }
+    </style>
+    <script src="https://cdn.bootcss.com/echarts/5.4.2/echarts.min.js"></script>
+    <script src="/js/echarts.js"></script>
+    <link rel="stylesheet" th>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.css}">
+    <link rel="stylesheet" th:href="@{/css/AdminLTE.css}">
+</head>
+<body>
+<h2 style="text-align: center; margin: 30px 0;">2025年1-5月每日运输量统计</h2>
+<div id="chart" ></div>
+</div>
+<script>
+    var myChart = echarts.init(document.getElementById('chart'));
+
+    // 调用后端接口获取数据
+    fetch('http://localhost:8080/api/transportrecords')
+        .then(response => response.json())
+        .then(data => {
+            // 处理数据：拆分日期和运输量
+            var dates = data.map(item => item.transportDate);
+            var quantities = data.map(item => item.quantity);
+
+            // 配置 ECharts 选项
+            var option = {
+                // title: { text: '2025年1-5月每日运输量统计' },
+                xAxis: {
+                    type: 'category',
+                    data: dates,
+                    axisLabel: {
+                        rotate: 45, // 日期旋转，避免重叠
+                        fontSize: 5
+                    }
+                },
+                yAxis: { type: 'value', name: '运输量' },
+                series: [{
+                    name: '每日运输量',
+                    type: 'line', // 折线图
+                    data: quantities,
+                    label: {
+                        show: true,
+                        position: 'top',
+                        fontSize: 10
+                    }
+                }]
+            };
+
+            // 设置配置项，渲染图表
+            myChart.setOption(option);
+        })
+        .catch(error => console.error('获取数据失败：', error));
+</script>
+</body>
+</html>

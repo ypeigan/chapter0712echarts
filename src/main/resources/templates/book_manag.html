@@ -1,0 +1,84 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>图书管理</title>
+    <style>
+        #chart {
+            width: 600px;
+            height: 400px;
+            margin: 50px auto;
+        }
+    </style>
+    <script src="https://cdn.bootcss.com/echarts/5.4.2/echarts.min.js"></script>
+    <script src="/js/echarts.js"></script>
+    <link rel="stylesheet" th>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.css}">
+    <link rel="stylesheet" th:href="@{/css/AdminLTE.css}">
+</head>
+<body>
+
+<div class="box-body">
+    <div id="chart"></div>
+</div>
+<script>
+    var myChart = echarts.init(document.getElementById('chart'));
+
+
+    //调用 Spring Boot 接口获取数据
+    fetch('/api/coalmines')
+        .then(response => response.json())
+        .then(data => {
+            // 统计每个省份的煤矿数量
+            var provinceCount = {};
+            data.forEach(item => {
+                var province = item.shengfen; // 对应实体类的省份字段名，如 shengfen
+                provinceCount[province] = (provinceCount[province] || 0) + 1;
+            });
+            console.log(provinceCount)
+
+            // 转换为 ECharts 饼图所需格式：[{name: '山西', value: 5}, {name: '陕西', value: 3}, ...]
+            var pieData = [];
+            for (var province in provinceCount) {
+                pieData.push({
+                    name: province,
+                    value: provinceCount[province]
+                });
+            }
+
+            // 配置 ECharts 选项
+            var option = {
+                title: {
+                    text: '各省份煤矿数量占比',
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b} : {c} 家 ({d}%)'
+                },
+                series: [
+                    {
+                        name: '煤矿数量',
+                        type: 'pie',
+                        radius: '55%',
+                        center: ['50%', '50%'],
+                        data: pieData,
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        }
+                    }
+                ]
+            };
+
+            // 设置配置项，渲染图表
+            myChart.setOption(option);
+        })
+        .catch(error => {
+            console.error('获取数据失败:', error);
+        });
+</script>
+</body>
+</html>

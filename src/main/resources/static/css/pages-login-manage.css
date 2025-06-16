@@ -1,0 +1,52 @@
+/* 登录页面特定样式 */
+.loginmanage {
+    background-color: #f0f2f5;
+    background-image: linear-gradient(135deg, #f0f2f5 0%, #e6e9f0 100%);
+}
+
+.py-container {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 输入框图标样式 */
+.absolute i {
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 登录按钮悬停效果 */
+button[type="submit"]:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+button[type="submit"]:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+/* 响应式设计 */
+@media (max-width: 420px) {
+    .py-container {
+        max-width: 90%;
+        padding: 1.5rem;
+    }
+
+    .text-3xl {
+        font-size: 1.5rem;
+    }
+}

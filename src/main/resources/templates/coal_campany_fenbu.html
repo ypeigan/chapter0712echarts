@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>煤矿与运输公司关联分析系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#F59E0B',
+                        dark: '#1F2937',
+                        light: '#F9FAFB',
+                        danger: '#EF4444',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                },
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            }
+            .gradient-bg {
+                background: linear-gradient(135deg, #3B82F6 0%, #10B981 100%);
+            }
+            .hover-lift {
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            .hover-lift:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            }
+            .fade-in {
+                animation: fadeIn 0.5s ease-in-out;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 text-dark">
+<div class="min-h-screen flex flex-col">
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-map-marker text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-primary">煤矿与运输公司分布分析</h1>
+            </div>
+            <nav class="hidden md:flex space-x-6">
+<!--                <a href="#distribution" class="text-gray-700 hover:text-primary transition-colors">分布热力图</a>-->
+                <a href="#correlation" class="text-gray-700 hover:text-primary transition-colors">关联分析</a>
+                <a href="#statistics" class="text-gray-700 hover:text-primary transition-colors">区域统计</a>
+<!--                <a href="#details" class="text-gray-700 hover:text-primary transition-colors">详情数据</a>-->
+            </nav>
+            <button class="md:hidden text-gray-700 focus:outline-none" id="mobile-menu-button">
+                <i class="fa fa-bars text-xl"></i>
+            </button>
+        </div>
+        <!-- 移动端菜单 -->
+        <div class="md:hidden hidden bg-white shadow-lg absolute w-full" id="mobile-menu">
+            <div class="container mx-auto px-4 py-3 flex flex-col space-y-3">
+                <a href="#distribution" class="text-gray-700 hover:text-primary py-2 border-b border-gray-100">分布热力图</a>
+                <a href="#correlation" class="text-gray-700 hover:text-primary py-2 border-b border-gray-100">关联分析</a>
+                <a href="#statistics" class="text-gray-700 hover:text-primary py-2 border-b border-gray-100">区域统计</a>
+                <a href="#details" class="text-gray-700 hover:text-primary py-2">详情数据</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 介绍卡片 -->
+    <section class="mb-8">
+        <div class="bg-white rounded-xl p-6 card-shadow">
+            <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fa fa-info-circle text-primary mr-2"></i>
+                分析概述
+            </h2>
+            <p class="text-gray-700 mb-4">
+                本工具通过ECharts可视化技术，分析煤矿与运输公司的地理分布关系。我们将从区域重合度、业务供需逻辑等角度，探索两者之间的关联性。
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-light rounded-lg p-4">
+                    <div class="flex items-center mb-2">
+                        <i class="fa fa-map-marker text-primary mr-2"></i>
+                        <h3 class="font-semibold">分布分析</h3>
+                    </div>
+                    <p class="text-sm text-gray-600">通过热力图展示煤矿与运输公司的地理分布情况，分析区域重合度。</p>
+                </div>
+                <div class="bg-light rounded-lg p-4">
+                    <div class="flex items-center mb-2">
+                        <i class="fa fa-link text-secondary mr-2"></i>
+                        <h3 class="font-semibold">关联分析</h3>
+                    </div>
+                    <p class="text-sm text-gray-600">研究煤矿分布对运输公司布局的影响，揭示业务供需逻辑关系。</p>
+                </div>
+                <div class="bg-light rounded-lg p-4">
+                    <div class="flex items-center mb-2">
+                        <i class="fa fa-bar-chart text-accent mr-2"></i>
+                        <h3 class="font-semibold">区域统计</h3>
+                    </div>
+                    <p class="text-sm text-gray-600">基于不同区域的煤矿和运输公司数量，进行对比分析和趋势研究。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 加载状态 -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl p-8 card-shadow fade-in">
+            <div class="flex flex-col items-center">
+                <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                <h3 class="text-xl font-bold text-primary">数据加载中</h3>
+                <p class="text-gray-600 mt-2">正在获取煤矿和运输公司数据，请稍候...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 错误提示 -->
+    <div id="error-message" class="fixed top-4 right-4 bg-danger text-white px-6 py-4 rounded-lg shadow-lg z-50 hidden fade-in">
+        <div class="flex items-center">
+            <i class="fa fa-exclamation-circle mr-2"></i>
+            <span id="error-text">数据加载失败，请重试</span>
+            <button id="close-error" class="ml-4 text-white hover:text-gray-200">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+
+    <!-- 关联分析 -->
+    <section id="correlation" class="mb-8">
+        <div class="bg-white rounded-xl p-6 card-shadow">
+            <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fa fa-link text-secondary mr-2"></i>
+                煤矿与运输公司关联分析
+            </h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">区域重合度分析</h3>
+                    <div class="relative">
+                        <div class="h-[500px]" id="overlap-chart"></div>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">
+                        此图展示了各省份煤矿与运输公司数量的对比，以及两者的重合度指数（重合度 = 运输公司数量 / 煤矿数量）。
+                        重合度越高，表示该区域运输公司对煤矿的覆盖率越高。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">关联强度分析</h3>
+                    <div class="relative">
+                        <div class="h-[500px]" id="correlation-chart"></div>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">
+                        此图通过散点图展示了煤矿数量与运输公司数量的相关性。趋势线显示两者呈正相关关系，
+                        表明煤矿分布对运输公司布局有显著影响。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 区域统计 -->
+    <section id="statistics" class="mb-8">
+        <div class="bg-white rounded-xl p-6 card-shadow">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i class="fa fa-bar-chart text-accent mr-2"></i>
+                    区域统计分析
+                </h2>
+                <div class="flex space-x-2">
+                    <button class="px-3 py-1 bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors" id="stats-coal">
+                        煤矿数量
+                    </button>
+                    <button class="px-3 py-1 bg-secondary/10 text-secondary rounded-md hover:bg-secondary/20 transition-colors" id="stats-transport">
+                        运输公司数量
+                    </button>
+                    <button class="px-3 py-1 bg-accent/10 text-accent rounded-md hover:bg-accent/20 transition-colors" id="stats-ratio">
+                        比例关系
+                    </button>
+                </div>
+            </div>
+            <div class="relative">
+                <div class="h-[400px]" id="statistics-chart"></div>
+            </div>
+            <div class="mt-4">
+                <p class="text-sm text-gray-600">
+                    选择不同的统计维度，查看各省份煤矿和运输公司的数量对比及比例关系。数据表明，
+                    煤炭主产区（如山西、内蒙古、陕西）通常拥有更多的煤矿和运输公司，呈现出明显的区域集中性。
+                </p>
+            </div>
+        </div>
+    </section>
+    </main>
+
+
+</div>
+
+<script>
+    // 全局变量
+    let coalData = [];         // 煤矿数据
+    let transportData = [];    // 运输公司数据
+    let overlapData = [];      // 重合度数据
+    let geoData = {};          // 地理数据
+   //let chinaMap = null;       // 中国地图数据
+
+    // DOM元素
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const errorMessage = document.getElementById('error-message');
+    const errorText = document.getElementById('error-text');
+    const closeError = document.getElementById('close-error');
+
+    // 图表实例
+    let overlapChart = null;
+    let correlationChart = null;
+    let geoHeatmap = null;
+    let coaldata = [];
+    let transportdata = [];
+
+    fetch('http://localhost:8080/api/coalmines')
+        .then(response => response.json())
+        .then(data => {
+            coaldata = data;
+
+            console.log(coaldata)
+        })
+    fetch('http://localhost:8080/api/transportcompanies')
+        .then(response => response.json())
+        .then(data => {
+            transportdata = data;
+
+            console.log(transportdata)
+        })
+
+
+    // API基础URL
+    const API_BASE_URL = 'http://localhost:8080';
+
+    // 显示加载状态
+    function showLoading() {
+        loadingOverlay.classList.remove('hidden');
+    }
+
+    // 隐藏加载状态
+    function hideLoading() {
+        loadingOverlay.classList.add('hidden');
+    }
+
+    // 显示错误信息
+    function showError(message) {
+        errorText.textContent = message;
+        errorMessage.classList.remove('hidden');
+
+        // 5秒后自动关闭
+        setTimeout(() => {
+            errorMessage.classList.add('hidden');
+        }, 5000);
+    }
+
+    // 关闭错误信息
+    closeError.addEventListener('click', () => {
+        errorMessage.classList.add('hidden');
+    });
+
+    // 从API获取数据
+    async function fetchData() {
+        showLoading();
+
+        try {
+            // 并行获取煤矿和运输公司数据
+            const [coalResponse, transportResponse] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/coalmines`),
+                fetch(`${API_BASE_URL}/api/transportcompanies`)
+            ]);
+
+            if (!coalResponse.ok || !transportResponse.ok) {
+                throw new Error(`请求失败: ${coalResponse.statusText || transportResponse.statusText}`);
+            }
+
+            // 解析数据
+            const [coalJson, transportJson] = await Promise.all([
+                coalResponse.json(),
+                transportResponse.json()
+            ]);
+
+            // 处理数据
+            coalData = processCoalData(coalJson);
+            transportData = processTransportData(transportJson);
+            overlapData = calculateOverlap(coalData, transportData);
+
+            // 初始化图表
+             initCharts();
+
+        } catch (error) {
+            console.error('数据获取失败:', error);
+            showError(`数据加载失败: ${error.message || '请检查服务器连接'}`);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    // 处理煤矿数据
+    function processCoalData(data) {
+        // 统计各省份煤矿数量
+        const provinceCount = {};
+        const geoPoints = [];
+
+        data.forEach(mine => {
+            const province = mine.shengfen || '未知省份';
+            provinceCount[province] = (provinceCount[province] || 0) + 1;
+        });
+
+        // 转换为数组并排序
+        const result = Object.entries(provinceCount)
+            .map(([province, coalcount]) => ({ province, coalcount }))
+            .sort((a, b) => b.coalcount - a.coalcount);
+
+        return {
+            data: result,
+            geoPoints
+        };
+    }
+
+    // 处理运输公司数据
+    function processTransportData(data) {
+        // 统计各省份运输公司数量
+        const provinceCount = {};
+        const geoPoints = [];
+
+        data.forEach(company => {
+            const province = company.province || '未知省份';
+            provinceCount[province] = (provinceCount[province] || 0) + 1;
+
+            // 如果有经纬度，添加到地理点数据
+            if (company.lng && company.lat) {
+                geoPoints.push({
+                    province,
+                    name: company.name,
+                    lng: parseFloat(company.lng),
+                    lat: parseFloat(company.lat),
+                    value: company.capacity || 1
+                });
+            }
+        });
+
+        // 转换为数组并排序
+        const result = Object.entries(provinceCount)
+            .map(([province, count]) => ({ province, count }))
+            .sort((a, b) => b.count - a.count);
+
+        return {
+            data: result,
+            geoPoints
+        };
+    }
+
+    // 计算重合度
+    function calculateOverlap(coalData, transportData) {
+        // 创建煤矿数据映射
+        const coalMap = {};
+        coalData.data.forEach(item => {
+            coalMap[item.province] = item.coalcount;
+        });
+
+        // 计算每个省份的重合度
+        const result = transportData.data.map(item => {
+            const coalCount = coalMap[item.province] || 0;
+            const overlap = coalCount > 0 ? item.count / coalCount : 0;
+
+            return {
+                province: item.province,
+                coalCount,
+                transportCount: item.count,
+                overlap
+            };
+        });
+
+        // 计算平均重合度
+        const avgOverlap = result.reduce((sum, item) => sum + item.overlap, 0) / result.length;
+
+        return {
+            data: result,
+            avgOverlap
+        };
+    }
+
+    fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json')
+        .then(response => response.json())
+        .then(chinaJson => {
+            // 注册地图数据
+            echarts.registerMap('china', chinaJson);
+        })
+
+    // 初始化图表
+    function initCharts() {
+        // 初始化重合度图表
+        overlapChart = echarts.init(document.getElementById('overlap-chart'));
+        overlapChart.setOption(createCountComparisonOption());
+
+        // 初始化关联强度图表
+        correlationChart = echarts.init(document.getElementById('correlation-chart'));
+        correlationChart.setOption(createCorrelationOption());
+
+        // 初始区域统计图表
+        overlapChart = echarts.init(document.getElementById('statistics-chart'));
+        overlapChart.setOption(createStatisticsOption());
+
+        // 绑定图表大小调整事件
+        window.addEventListener('resize', () => {
+            overlapChart.resize();
+            correlationChart.resize();
+            geoHeatmap.resize();
+        });
+    }
+
+
+    // 区域重合度图表配置
+    function createCountComparisonOption() {
+
+        return {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                },
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                borderColor: '#eee',
+                borderWidth: 1,
+                padding: 5,
+                textStyle: {
+                    color: '#333'
+                }
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: overlapData.data.map(item => item.province),
+                axisLabel: {
+                    interval: 0,
+                    rotate: 45,
+                    fontSize:8,
+                    textStyle: {
+                        color: '#333'
+                    }
+                }
+            },
+            yAxis: [
+                {
+                    type: 'value',
+                    name: '数量',
+                    axisLabel: {
+                        textStyle: {
+                            color: '#333'
+                        }
+                    }
+                },
+                {
+                    type: 'value',
+                    name: '重合度指数',
+                    min: 0,
+                    max: 6,
+                    interval: 1,
+                    axisLabel: {
+                        formatter: '{value}',
+                        textStyle: {
+                            color: '#333'
+                        }
+                    }
+                }
+            ],
+            series: [
+                {
+                    name: '煤矿数量',
+                    type: 'bar',
+                    data: overlapData.data.map(item => item.coalCount),
+                    barWidth: '30%',
+                    itemStyle: {
+                        color: '#165DFF'
+                    }
+                },
+                {
+                    name: '运输公司数量',
+                    type: 'bar',
+                    data: overlapData.data.map(item => item.transportCount),
+                    barWidth: '30%',
+                    itemStyle: {
+                        color: '#FF7D00'
+                    }
+                },
+                {
+                    name: '重合度指数',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    data: overlapData.data.map(item => item.overlap),
+                    symbol: 'circle',
+                    symbolSize: 8,
+                    itemStyle: {
+                        color: '#00B42A'
+                    },
+                    lineStyle: {
+                        color: '#00B42A',
+                        width: 2
+                    }
+                }
+            ]
+        };
+    }
+
+    function createCorrelationOption() {
+       // console.log(data)
+        return {
+            // 鼠标悬浮提示框
+            tooltip: {
+                trigger: 'item', // 每个散点触发
+                formatter: function (params) {
+                    return `<div class="text-left">
+                    <div class="font-bold">${params.data.name}</div>
+                    <div>煤矿数量: ${params.data.coal}</div>
+                    <div>运输公司数量: ${params.data.transport}</div>
+                    <div>重合度: ${params.data.overlap.toFixed(2)}</div>
+                </div>`;
+                },
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                borderColor: '#eee',
+                borderWidth: 1,
+                padding: 10,
+                textStyle: {
+                    color: '#333'
+                }
+            },
+
+            // 图表网格布局
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+
+            // x 轴为煤矿数量
+            xAxis: {
+                type: 'value',
+                name: '煤矿数量',
+                min: 0,
+                max: 150, // 可根据实际数据调整
+                axisLabel: {
+                    textStyle: {
+                        color: '#333'
+                    }
+                }
+            },
+
+            // y 轴为运输公司数量
+            yAxis: {
+                type: 'value',
+                name: '运输公司数量',
+                min: 0,
+                max: 150, // 可根据实际数据调整
+                axisLabel: {
+                    textStyle: {
+                        color: '#333'
+                    }
+                }
+            },
+
+            // 系列（数据点 + 趋势线）
+            series: [
+                {
+                    name: '区域关联',
+                    type: 'scatter',
+                    data: overlapData.data.map(item => ({
+                        name: item.province,
+                        value: [item.coalCount, item.transportCount, item.overlap * 100],
+                        coal: item.coalCount,
+                        transport: item.transportCount,
+                        overlap: item.overlap
+                    })),
+                    symbolSize: function (val) {
+                        // 根据 overlap 设置点的大小
+                        return 10 + val[2] / 10;
+                    },
+                    itemStyle: {
+                        color: function (params) {
+                            // 渐变色视觉增强
+                            return new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(22, 93, 255, 0.7)' },
+                                { offset: 1, color: 'rgba(0, 180, 42, 0.9)' }
+                            ]);
+                        }
+                    }
+                },
+                {
+                    name: '趋势线',
+                    type: 'line',
+                    data: [
+                        [0, 0],
+                        [150, 150] // 简单的参考趋势线，可根据数据做回归拟合替代
+                    ],
+                    symbol: 'none',
+                    lineStyle: {
+                        type: 'dashed',
+                        color: '#FF7D00',
+                        width: 2
+                    }
+                }
+            ]
+        };
+    }
+
+    function createStatisticsOption() {
+        // 区域统计切换按钮事件
+        document.getElementById('stats-coal').addEventListener('click', function() {
+            if (overlapChart) {
+                const option = overlapChart.getOption();
+                option.series[0].name = '煤矿数量';
+                option.series[0].data = overlapData.data.map(item => item.coalCount);
+                option.series[0].itemStyle.color = '#165DFF';
+                overlapChart.setOption(option);
+            }
+        });
+
+        document.getElementById('stats-transport').addEventListener('click', function() {
+            if (overlapChart) {
+                const option = overlapChart.getOption();
+                option.series[0].name = '运输公司数量';
+                option.series[0].data = overlapData.data.map(item => item.transportCount);
+                option.series[0].itemStyle.color = '#FF7D00';
+                overlapChart.setOption(option);
+            }
+        });
+
+        document.getElementById('stats-ratio').addEventListener('click', function() {
+            if (overlapChart) {
+                const option = overlapChart.getOption();
+                option.series[0].name = '运输公司/煤矿比例';
+                option.series[0].data = overlapData.data.map(item => item.transportCount/ item.coalCount);
+                option.series[0].itemStyle.color = '#00B42A';
+                overlapChart.setOption(option);
+            }
+        });
+
+
+        return {
+            // 鼠标悬浮提示框设置
+            tooltip: {
+                trigger: 'axis', // 提示触发方式：坐标轴触发
+                axisPointer: {
+                    type: 'shadow' // 指示器样式为阴影型
+                },
+                backgroundColor: 'rgba(255, 255, 255, 0.9)', // 白底透明背景
+                borderColor: '#eee', // 浅灰边框
+                borderWidth: 1,
+                padding: 10,
+                textStyle: {
+                    color: '#333' // 深色文字
+                }
+            },
+
+            // 图表内部边距控制
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true // 保证标签不被剪切
+            },
+
+            // x 轴配置：省份名称
+            xAxis: {
+                type: 'category',
+                data: overlapData.data.map(item => item.province), // 提取省份名作为类目轴
+                axisLabel: {
+                    interval: 0, // 强制全部显示
+                    rotate: 45,  // 倾斜45度防止重叠
+                    textStyle: {
+                        color: '#333' // 标签颜色
+                    }
+                }
+            },
+
+            // y 轴配置：煤矿数量
+            yAxis: {
+                type: 'value',
+                axisLabel: {
+                    textStyle: {
+                        color: '#333' // 标签颜色
+                    }
+                }
+            },
+
+            // 数据系列：煤矿数量柱状图
+            series: [
+                {
+                    name: '煤矿数量', // 图例名称
+                    type: 'bar',      // 类型为柱状图
+                    data: overlapData.data.map(item => item.coalCount), // 提取每省煤矿数量
+                    barWidth: '40%',  // 柱形宽度
+                    itemStyle: {
+                        color: '#165DFF' // 蓝色填充
+                    }
+                }
+            ]
+        };
+    }
+
+
+    // 页面加载完成后获取数据
+    window.addEventListener('load', fetchData);
+</script>
+</body>
+</html>

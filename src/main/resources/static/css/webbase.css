@@ -1,0 +1,239 @@
+@charset "UTF-8";
+
+/* 基础样式重置和设置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    min-height: 100vh;
+    background-color: #f8fafc;
+    color: #334155;
+}
+
+/* 字体相关样式 */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.text-3xl {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+}
+
+.font-bold {
+    font-weight: 700;
+}
+
+.text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+}
+
+.font-medium {
+    font-weight: 500;
+}
+
+/* 颜色相关样式 */
+.text-primary {
+    color: #165DFF;
+}
+
+.text-gray-600 {
+    color: #64748B;
+}
+
+.text-gray-700 {
+    color: #334155;
+}
+
+.text-gray-400 {
+    color: #94A3B8;
+}
+
+.text-white {
+    color: #FFFFFF;
+}
+
+.bg-primary {
+    background-color: #165DFF;
+}
+
+.bg-primary/90 {
+    background-color: rgba(22, 93, 255, 0.9);
+}
+
+/* 间距相关样式 */
+.mb-8 {
+    margin-bottom: 2rem;
+}
+
+.mb-1 {
+    margin-bottom: 0.25rem;
+}
+
+.mr-2 {
+    margin-right: 0.5rem;
+}
+
+.space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.5rem;
+}
+
+.py-3 {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+}
+
+.px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.pl-10 {
+    padding-left: 2.5rem;
+}
+
+.pl-3 {
+    padding-left: 0.75rem;
+}
+
+/* 布局相关样式 */
+.loginmanage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.py-container {
+    width: 100%;
+    max-width: 360px;
+    padding: 2rem;
+    background-color: #FFFFFF;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.text-center {
+    text-align: center;
+}
+
+.block {
+    display: block;
+}
+
+.flex {
+    display: flex;
+}
+
+.absolute {
+    position: absolute;
+}
+
+.relative {
+    position: relative;
+}
+
+.inset-y-0 {
+    top: 0;
+    bottom: 0;
+}
+
+.left-0 {
+    left: 0;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+.w-full {
+    width: 100%;
+}
+
+/* 表单元素样式 */
+input[type="text"],
+input[type="password"] {
+    height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border: 1px solid #CBD5E1;
+    border-radius: 0.375rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    outline: 0;
+    border-color: #165DFF;
+    box-shadow: 0 0 0 0.2rem rgba(22, 93, 255, 0.25);
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    outline: none;
+}
+
+button:focus {
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(22, 93, 255, 0.25);
+}
+
+.rounded-lg {
+    border-radius: 0.5rem;
+}
+
+.rounded-lg {
+    border-radius: 0.5rem;
+}
+
+.border-gray-300 {
+    border-color: #CBD5E1;
+}
+
+/* 交互效果 */
+.hover:bg-primary/90:hover {
+                        background-color: rgba(22, 93, 255, 0.9);
+                    }
+
+.focus:ring-accent:focus {
+    box-shadow: 0 0 0 0.2rem rgba(22, 93, 255, 0.25);
+}
+
+.focus:border-accent:focus {
+    border-color: #165DFF;
+}
+
+.transition-custom {
+    transition: all 0.2s ease;
+}
+
+/* 占位符样式 */
+::placeholder {
+    color: #94A3B8;
+    opacity: 1;
+}
+
+:-ms-input-placeholder {
+    color: #94A3B8;
+}
+
+::-ms-input-placeholder {
+    color: #94A3B8;
+}
